@@ -31,11 +31,11 @@ func Cmd_checkout(args string) {
 func Cmd_commit(args string) {
 
 }
-func CmdHashObject(args ...string) {
+func CmdHashObject(write bool, typeName string, path string) {
 	var repo *repository.Repository
 	var err error
 
-	if len(args) > 1 && args[1] != "" {
+	if write {
 		repo, err = repository.FindRepo(".", true)
 		if err != nil {
 			log.Fatalf("Error with hash object: %v", err)
@@ -44,14 +44,14 @@ func CmdHashObject(args ...string) {
 		repo = nil
 	}
 
-	file, err := os.Open(args[2])
+	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("Error with hash object: %w", err)
 	}
 
 	defer file.Close()
 
-	sha, err := repository.ObjectHash(file, args[3], repo)
+	sha, err := repository.ObjectHash(file, typeName, repo)
 	if err != nil {
 		log.Fatalf("Error with hash object: %w", err)
 	}

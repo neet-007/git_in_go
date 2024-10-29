@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -8,9 +10,11 @@ import (
 )
 
 func main() {
-	args := os.Args[1:]
 
-	switch args[0] {
+	args := os.Args
+
+	fmt.Printf("%s\n", args[1])
+	switch args[1] {
 	case "add":
 		bridges.Cmd_add(args[0])
 	case "cat-file":
@@ -22,7 +26,23 @@ func main() {
 	case "commit":
 		bridges.Cmd_commit(args[0])
 	case "hash-object":
-		bridges.Cmd_hash_object(args[0])
+		var writeFlag bool
+		var typeFlag string
+
+		hashObjectCmd := flag.NewFlagSet("hash-object", flag.ExitOnError)
+		hashObjectCmd.BoolVar(&writeFlag, "w", false, "Write the hash to the repo")
+		hashObjectCmd.StringVar(&typeFlag, "t", "", "Specify the type of the hash")
+
+		hashObjectCmd.Parse(args[2:])
+
+		positionalArgs := hashObjectCmd.Args()
+
+		if len(positionalArgs) == 0 {
+			fmt.Println("You must provide a file path for hash-object.")
+			os.Exit(1)
+		}
+
+		bridges.CmdHashObject(writeFlag, typeFlag, args[0])
 	case "init":
 		bridges.CmdInit(args...)
 	case "log":
@@ -44,5 +64,4 @@ func main() {
 	default:
 		log.Fatal("unkown command")
 	}
-
 }
