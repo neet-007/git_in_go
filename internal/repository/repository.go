@@ -2,9 +2,11 @@ package repository
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/neet-007/git_in_go/internal/utils"
 	"gopkg.in/ini.v1"
 )
 
@@ -14,7 +16,7 @@ type Repository struct {
 	Conf     *ini.File
 }
 
-func NewRepository(path string, force bool) (Repository, error) {
+func NewRepository(path string, force bool) (*Repository, error) {
 	repo := Repository{
 		Worktree: path,
 		Gitdir:   filepath.Join(path, ".git"),
@@ -22,11 +24,11 @@ func NewRepository(path string, force bool) (Repository, error) {
 
 	info, err := os.Stat(repo.Gitdir)
 	if err != nil && !force {
-		return Repository{}, err
+		return nil, err
 	}
 
 	if !(force || info.IsDir()) {
-		return Repository{}, fmt.Errorf("Not a Git repository %s", path)
+		return nil, fmt.Errorf("Not a Git repository %s", path)
 	}
 
 	cf := repo.RepoPath("config")
@@ -35,7 +37,7 @@ func NewRepository(path string, force bool) (Repository, error) {
 	if err != nil {
 		info, err = os.Stat(cf)
 		if err != nil && !force {
-			return Repository{}, fmt.Errorf("Configuration file missing")
+			return nil, fmt.Errorf("Configuration file missing")
 		}
 	}
 
@@ -51,7 +53,7 @@ func NewRepository(path string, force bool) (Repository, error) {
 		}
 	}
 
-	return repo, nil
+	return &repo, nil
 }
 
 func (repo *Repository) RepoPath(path ...string) string {
@@ -87,11 +89,11 @@ func (repo *Repository) RepoDir(mkdir bool, path ...string) (string, error) {
 	return pathLocal, nil
 }
 
-func CreateRepo(path string) (Repository, error) {
+func CreateRepo(path string) (*Repository, error) {
 	repo, err := NewRepository(path, true)
 
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	info, err := os.Stat(repo.Worktree)
@@ -100,12 +102,12 @@ func CreateRepo(path string) (Repository, error) {
 		info, err = os.Stat(repo.Worktree)
 
 		if err != nil {
-			return Repository{}, fmt.Errorf("error even after making file %w", err)
+			return nil, fmt.Errorf("error even after making file %w", err)
 		}
 	}
 
 	if !info.IsDir() {
-		return Repository{}, fmt.Errorf("Not a directory %s", path)
+		return nil, fmt.Errorf("Not a directory %s", path)
 	}
 
 	_, err = os.Stat(repo.Gitdir)
@@ -113,7 +115,7 @@ func CreateRepo(path string) (Repository, error) {
 		_, err := os.ReadDir(repo.Gitdir)
 
 		if err == nil {
-			return Repository{}, fmt.Errorf("%s is not empty", path)
+			return nil, fmt.Errorf("%s is not empty", path)
 		}
 	}
 
@@ -121,58 +123,58 @@ func CreateRepo(path string) (Repository, error) {
 
 	_, err = repo.RepoDir(true, "branches")
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	_, err = repo.RepoDir(true, "objects")
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	_, err = repo.RepoDir(true, "refs", "tags")
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	_, err = repo.RepoDir(true, "refs", "heads")
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	dir := repo.RepoPath("description")
 
 	file, err := os.Create(dir)
 	if err != nil {
-		return Repository{}, fmt.Errorf("Failed to create file: %v", err)
+		return nil, fmt.Errorf("Failed to create file: %v", err)
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString("Unnamed repository; edit this file 'description' to name the repository.\n"); err != nil {
-		return Repository{}, fmt.Errorf("Failed to write to file: %v", err)
+		return nil, fmt.Errorf("Failed to write to file: %v", err)
 	}
 
 	dir = repo.RepoPath("HEAD")
 
 	file, err = os.Create(dir)
 	if err != nil {
-		return Repository{}, fmt.Errorf("Failed to create file: %v", err)
+		return nil, fmt.Errorf("Failed to create file: %v", err)
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString("ref: refs/heads/master\n"); err != nil {
-		return Repository{}, fmt.Errorf("Failed to write to file: %v", err)
+		return nil, fmt.Errorf("Failed to write to file: %v", err)
 	}
 
 	dir = repo.RepoPath("config")
 
 	config, err := repoDefaultConfig()
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	err = config.SaveTo(dir)
 	if err != nil {
-		return Repository{}, err
+		return nil, err
 	}
 
 	return repo, nil
@@ -193,52 +195,49 @@ func repoDefaultConfig() (*ini.File, error) {
 	return cfg, nil
 }
 
-func findRepo(path string, required bool) (string, error) {
-	path, err := realPath(path)
+func (repo *Repository) CatFile(objName string, fmtType string) {
+	obj, err := repo.ObjectRead(repo.ObjectFind(objName, fmtType, true))
+	if err != nil || obj == nil {
+		log.Fatal("Error while cat-file: %w\n", err)
+	}
+
+	data, err := obj.Serialize()
+	if err != nil || obj == nil {
+		log.Fatal("Error while cat-file: %w\n", err)
+	}
+
+	fmt.Printf("%v\n", string(data))
+}
+
+func FindRepo(path string, required bool) (*Repository, error) {
+	path, err := utils.RealPath(path)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	info, err := os.Stat(filepath.Join(path, ".git"))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if info.IsDir() {
-		return path, nil
+		repo, err := NewRepository(path, false)
+		if err != nil {
+			return nil, err
+		}
+
+		return repo, nil
 	}
 
 	parent := filepath.Clean(filepath.Join(path, ".."))
 	if parent == path {
 		if required {
-			return "", fmt.Errorf("No git directory")
+			return nil, fmt.Errorf("No git directory")
 		}
 
-		return "", nil
+		return nil, fmt.Errorf("No git direcotory but not required")
 	}
 
-	return findRepo(path, required)
-}
-
-func realPath(path string) (string, error) {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return "", err
-	}
-
-	info, err := os.Stat(absPath)
-	if err != nil {
-		return "", err
-	}
-
-	if info.Mode()&os.ModeSymlink != 0 {
-		resolvedPath, err := os.Readlink(absPath)
-		if err != nil {
-			return "", err
-		}
-		return resolvedPath, nil
-	}
-
-	return absPath, nil
+	return FindRepo(path, required)
 }

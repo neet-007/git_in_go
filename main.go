@@ -14,7 +14,7 @@ func main() {
 	case "add":
 		bridges.Cmd_add(args[0])
 	case "cat-file":
-		bridges.Cmd_cat_file(args[0])
+		bridges.CmdCatFile(args...)
 	case "check-ignore":
 		bridges.Cmd_check_ignore(args[0])
 	case "checkout":
@@ -24,7 +24,7 @@ func main() {
 	case "hash-object":
 		bridges.Cmd_hash_object(args[0])
 	case "init":
-		bridges.Cmd_init(args...)
+		bridges.CmdInit(args...)
 	case "log":
 		bridges.Cmd_log(args[0])
 	case "ls-files":
