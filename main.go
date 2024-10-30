@@ -13,7 +13,6 @@ func main() {
 
 	args := os.Args
 
-	fmt.Printf("%s\n", args[1])
 	switch args[1] {
 	case "add":
 		bridges.Cmd_add(args[0])
@@ -42,7 +41,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		bridges.CmdHashObject(writeFlag, typeFlag, args[0])
+		bridges.CmdHashObject(writeFlag, typeFlag, positionalArgs[0])
 	case "init":
 		bridges.CmdInit(args...)
 	case "log":

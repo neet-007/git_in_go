@@ -198,18 +198,23 @@ func repoDefaultConfig() (*ini.File, error) {
 func (repo *Repository) CatFile(objName string, fmtType string) {
 	obj, err := repo.ObjectRead(repo.ObjectFind(objName, fmtType, true))
 	if err != nil || obj == nil {
-		log.Fatal("Error while cat-file: %w\n", err)
+		log.Fatalf("Error while cat-file: %v\n", err)
 	}
 
 	data, err := obj.Serialize()
 	if err != nil || obj == nil {
-		log.Fatal("Error while cat-file: %w\n", err)
+		log.Fatalf("Error while cat-file: %v\n", err)
 	}
 
 	fmt.Printf("%v\n", string(data))
 }
 
 func FindRepo(path string, required bool) (*Repository, error) {
+	/*
+		path: default val is .
+		required default val is true
+	*/
+
 	path, err := utils.RealPath(path)
 
 	if err != nil {

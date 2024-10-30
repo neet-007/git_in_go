@@ -36,7 +36,8 @@ func (blob *GitBlob) Deserialize(data []byte) error {
 	return nil
 }
 func (blob *GitBlob) Init(data []byte) {
-
+	blob.Fmt = "blob"
+	blob.BlobData = data
 }
 func (blob *GitBlob) GetFmt() ([]byte, error) {
 	return []byte(blob.Fmt), nil

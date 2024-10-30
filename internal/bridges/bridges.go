@@ -15,7 +15,7 @@ func Cmd_add(args string) {
 func CmdCatFile(args ...string) {
 	repo, err := repository.FindRepo(".", true)
 	if err != nil {
-		log.Fatalf("Error with cat-file: %w", err)
+		log.Fatalf("Error with cat-file: %v", err)
 	}
 
 	repo.CatFile(args[1], args[2])
@@ -46,22 +46,22 @@ func CmdHashObject(write bool, typeName string, path string) {
 
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatalf("Error with hash object: %w", err)
+		log.Fatalf("Error with hash object: %v", err)
 	}
 
 	defer file.Close()
 
 	sha, err := repository.ObjectHash(file, typeName, repo)
 	if err != nil {
-		log.Fatalf("Error with hash object: %w", err)
+		log.Fatalf("Error with hash object: %v", err)
 	}
 
-	fmt.Printf("%s", sha)
+	fmt.Printf("%s\n", sha)
 }
 func CmdInit(args ...string) {
 	_, err := repository.CreateRepo(args[1])
 	if err != nil {
-		log.Fatalf("Error: %w\n", err)
+		log.Fatalf("Error: %v\n", err)
 	}
 
 	fmt.Println("empty repo is initinlized")

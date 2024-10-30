@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -67,6 +68,7 @@ func (repo *Repository) ObjectRead(sha string) (GitObject, error) {
 		return nil, fmt.Errorf("malformed object %s: bad length", sha)
 	}
 
+	fmt.Printf("fmt tpye %s\n", fmtType)
 	var obj GitObject
 	switch string(fmtType) {
 	case "commit":
@@ -78,6 +80,7 @@ func (repo *Repository) ObjectRead(sha string) (GitObject, error) {
 	case "blob":
 		obj = &GitBlob{}
 	default:
+		fmt.Printf("heeeerer \n")
 		return nil, fmt.Errorf("unknown type %s for object %s", fmtType, sha)
 	}
 
@@ -140,7 +143,7 @@ func ObjectWrite(obj GitObject, repo *Repository) (string, error) {
 		}
 	}
 
-	return string(sha), nil
+	return hex.EncodeToString(sha), nil
 }
 
 func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) string {
@@ -172,7 +175,7 @@ func ObjectHash(file *os.File, fmtType string, repo *Repository) (string, error)
 			obj = &GitTag{}
 
 		}
-	case "\bblob":
+	case "blob":
 		{
 			obj = &GitBlob{}
 
