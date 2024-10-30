@@ -61,13 +61,20 @@ func CmdHashObject(write bool, typeName string, path string) {
 func CmdInit(args ...string) {
 	_, err := repository.CreateRepo(args[1])
 	if err != nil {
-		log.Fatalf("Error: %v\n", err)
+		log.Fatalf("Error while initlizaing repo: %v\n", err)
 	}
 
 	fmt.Println("empty repo is initinlized\n")
 }
-func Cmd_log(args string) {
+func CmdLog(commit string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while logging: %v\n", err)
+	}
 
+	fmt.Println("digraph gitlog{\n node[shape=rect]")
+	repository.LogGraphviz(repo, commit, &map[string]byte{})
+	fmt.Println("}")
 }
 func Cmd_ls_files(args string) {
 

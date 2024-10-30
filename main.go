@@ -45,7 +45,7 @@ func main() {
 	case "init":
 		bridges.CmdInit(args...)
 	case "log":
-		bridges.Cmd_log(args[0])
+		bridges.CmdLog(args[2])
 	case "ls-files":
 		bridges.Cmd_ls_files(args[0])
 	case "ls-tree":

@@ -1,5 +1,10 @@
 package repository
 
+import (
+	"github.com/neet-007/git_in_go/internal/sharedtypes"
+	"github.com/neet-007/git_in_go/internal/utils"
+)
+
 type GitObject interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
@@ -13,8 +18,8 @@ type GitBlob struct {
 }
 
 type GitCommit struct {
-	Fmt      string
-	BlobData []byte
+	Fmt  string
+	Kvlm *sharedtypes.Kvlm
 }
 
 type GitTree struct {
@@ -30,32 +35,48 @@ type GitTag struct {
 func (blob *GitBlob) Serialize() ([]byte, error) {
 	return blob.BlobData, nil
 }
+
 func (blob *GitBlob) Deserialize(data []byte) error {
 	blob.BlobData = data
 
 	return nil
 }
+
 func (blob *GitBlob) Init(data []byte) {
 	blob.Fmt = "blob"
 	blob.BlobData = data
 }
+
 func (blob *GitBlob) GetFmt() ([]byte, error) {
 	return []byte(blob.Fmt), nil
 }
 
-func (blob *GitCommit) Serialize() ([]byte, error) {
-	return blob.BlobData, nil
-}
-func (blob *GitCommit) Deserialize(data []byte) error {
-	blob.BlobData = data
+func (commit *GitCommit) Serialize() ([]byte, error) {
+	kvlm, err := utils.KvlmSerialize(commit.Kvlm)
+	if err != nil {
+		return []byte{}, err
+	}
 
+	return kvlm, nil
+}
+
+func (commit *GitCommit) Deserialize(data []byte) error {
+	kvlm, err := utils.KvlmParser(data, 0, nil)
+	if err != nil {
+		return err
+	}
+
+	commit.Kvlm = kvlm
 	return nil
 }
-func (blob *GitCommit) Init(data []byte) {
 
+func (commit *GitCommit) Init(data []byte) {
+	commit.Fmt = "commit"
+	commit.Kvlm = &sharedtypes.Kvlm{}
 }
-func (blob *GitCommit) GetFmt() ([]byte, error) {
-	return []byte(blob.Fmt), nil
+
+func (commit *GitCommit) GetFmt() ([]byte, error) {
+	return []byte(commit.Fmt), nil
 }
 
 func (blob *GitTree) Serialize() ([]byte, error) {
