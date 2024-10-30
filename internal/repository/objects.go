@@ -68,7 +68,6 @@ func (repo *Repository) ObjectRead(sha string) (GitObject, error) {
 		return nil, fmt.Errorf("malformed object %s: bad length", sha)
 	}
 
-	fmt.Printf("fmt tpye %s\n", fmtType)
 	var obj GitObject
 	switch string(fmtType) {
 	case "commit":
@@ -80,7 +79,6 @@ func (repo *Repository) ObjectRead(sha string) (GitObject, error) {
 	case "blob":
 		obj = &GitBlob{}
 	default:
-		fmt.Printf("heeeerer \n")
 		return nil, fmt.Errorf("unknown type %s for object %s", fmtType, sha)
 	}
 
@@ -109,18 +107,21 @@ func ObjectWrite(obj GitObject, repo *Repository) (string, error) {
 
 	shaInterface := sha1.New()
 	shaInterface.Write(result)
-	sha := shaInterface.Sum(nil)
+	sha := hex.EncodeToString(shaInterface.Sum(nil))
 
 	if repo != nil {
-		path, err := repo.RepoFile(true, "objects", string(sha[0:2]), string(sha[2:]))
+		path, err := repo.RepoFile(true, "objects", sha[0:2], sha[2:])
 
 		if err != nil {
 			return "", err
 		}
 
+		println("i me heeeeerer")
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			file, err := os.Open(path)
+			file, err := os.Create(path)
+			fmt.Printf("file path:%s\n", path)
 			if err != nil {
+				println("this errrro")
 				return "", err
 			}
 
@@ -143,7 +144,7 @@ func ObjectWrite(obj GitObject, repo *Repository) (string, error) {
 		}
 	}
 
-	return hex.EncodeToString(sha), nil
+	return sha, nil
 }
 
 func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) string {

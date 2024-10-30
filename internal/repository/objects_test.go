@@ -19,7 +19,7 @@ func randomString(length int) string {
 	return string(result)
 }
 
-func TestHashObjectBlob(t *testing.T) {
+func TestHashObjectHashingBlob(t *testing.T) {
 	cases := make([]string, 10, 10)
 
 	for range len(cases) {

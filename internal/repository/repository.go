@@ -198,12 +198,12 @@ func repoDefaultConfig() (*ini.File, error) {
 func (repo *Repository) CatFile(objName string, fmtType string) {
 	obj, err := repo.ObjectRead(repo.ObjectFind(objName, fmtType, true))
 	if err != nil || obj == nil {
-		log.Fatalf("Error while cat-file: %v\n", err)
+		log.Fatalf("Error while cat-file read: %v\n", err)
 	}
 
 	data, err := obj.Serialize()
 	if err != nil || obj == nil {
-		log.Fatalf("Error while cat-file: %v\n", err)
+		log.Fatalf("Error while cat-file serialize: %v\n", err)
 	}
 
 	fmt.Printf("%v\n", string(data))
