@@ -148,6 +148,10 @@ func ObjectWrite(obj GitObject, repo *Repository) (string, error) {
 }
 
 func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) string {
+	/*
+		fmtType: defailt val is ""
+		follow: default val is false
+	*/
 	return name
 }
 

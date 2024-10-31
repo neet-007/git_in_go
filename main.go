@@ -21,7 +21,7 @@ func main() {
 	case "check-ignore":
 		bridges.Cmd_check_ignore(args[0])
 	case "checkout":
-		bridges.Cmd_checkout(args[0])
+		bridges.CmdCheckout(args[2], args[3])
 	case "commit":
 		bridges.Cmd_commit(args[0])
 	case "hash-object":
@@ -45,11 +45,29 @@ func main() {
 	case "init":
 		bridges.CmdInit(args...)
 	case "log":
-		bridges.CmdLog(args[2])
+		if len(args) < 3 {
+			bridges.CmdLog("HEAD")
+		} else {
+			bridges.CmdLog(args[2])
+		}
 	case "ls-files":
 		bridges.Cmd_ls_files(args[0])
 	case "ls-tree":
-		bridges.Cmd_ls_tree(args[0])
+		var recursiceFlag bool
+
+		lsTreeCmd := flag.NewFlagSet("ls-tree", flag.ExitOnError)
+		lsTreeCmd.BoolVar(&recursiceFlag, "r", false, "recursively print the tree")
+
+		lsTreeCmd.Parse(args[2:])
+
+		positionalArgs := lsTreeCmd.Args()
+
+		if len(positionalArgs) == 0 {
+			fmt.Println("You must provide a dir or file path for ls-tree")
+			os.Exit(1)
+		}
+
+		bridges.CmdLsTree(positionalArgs[0], recursiceFlag)
 	case "rev-parse":
 		bridges.Cmd_rev_parse(args[0])
 	case "rm":

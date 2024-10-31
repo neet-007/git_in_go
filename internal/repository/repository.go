@@ -1,10 +1,12 @@
 package repository
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/neet-007/git_in_go/internal/utils"
 	"gopkg.in/ini.v1"
@@ -207,6 +209,109 @@ func (repo *Repository) CatFile(objName string, fmtType string) {
 	}
 
 	fmt.Printf("%v\n", string(data))
+}
+
+func (repo *Repository) LsTree(path string, recursive bool, prefix string) error {
+	/*
+		recursive: default val is false
+		prefix: default val is ""
+	*/
+
+	sha := repo.ObjectFind(path, "tree", false)
+	obj, err := repo.ObjectRead(sha)
+
+	if err != nil {
+		return err
+	}
+
+	objTree := obj.(*GitTree)
+
+	for _, item := range objTree.items {
+		var objType []byte
+		var objTypeStr string
+
+		if len(item.Mode) == 5 {
+			objType = item.Mode[:1]
+		} else {
+			objType = item.Mode[:2]
+		}
+
+		switch {
+		case bytes.Equal(objType, []byte{'\x04'}):
+			objTypeStr = "tree"
+		case bytes.Equal(objType, []byte{'\x10'}):
+			objTypeStr = "blob"
+		case bytes.Equal(objType, []byte{'\x12'}):
+			objTypeStr = "blob"
+		case bytes.Equal(objType, []byte{'\x16'}):
+			objTypeStr = "commit"
+		default:
+			fmt.Printf("Weird tree leaf mode %v\n", item.Mode)
+			return fmt.Errorf("unknow type %s for path %s\n", string(objType), path)
+		}
+
+		if !(recursive && objTypeStr == "tree") {
+			fmt.Printf("%s %s %s\t %s\n", strings.Repeat("0", (6-len(item.Mode)))+string(item.Mode), objTypeStr, item.Sha, filepath.Join(prefix, item.Path))
+			continue
+		}
+
+		err := repo.LsTree(item.Sha, recursive, filepath.Join(prefix, item.Path))
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (repo *Repository) TreeCheckout(tree *GitTree, path string) error {
+	if tree == nil {
+		return fmt.Errorf("tree is nil at path:%s\n", path)
+	}
+
+	for _, item := range tree.items {
+		if item == nil {
+			return fmt.Errorf("tree item is nil at path:%s\n", path)
+		}
+
+		obj, err := repo.ObjectRead(item.Sha)
+		if err != nil {
+			return err
+		}
+
+		dest := filepath.Join(path, item.Path)
+
+		objFmt, err := obj.GetFmt()
+		if err != nil {
+			return err
+		}
+
+		if string(objFmt) == "tree" {
+			if err = os.MkdirAll(dest, 0755); err != nil {
+				return err
+			}
+			objTree := obj.(*GitTree)
+			repo.TreeCheckout(objTree, dest)
+			continue
+		}
+
+		if string(objFmt) == "blob" {
+			//IMPORTANT ADD SYM LINK
+			file, err := os.Create(dest)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			objBlob := obj.(*GitBlob)
+			_, err = file.Write(objBlob.BlobData)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func FindRepo(path string, required bool) (*Repository, error) {
