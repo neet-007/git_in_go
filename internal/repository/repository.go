@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -274,6 +275,7 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 
 func (repo *Repository) TreeCheckout(tree *GitTree, path string) error {
 	if tree == nil {
+		println("gooooootacha")
 		return fmt.Errorf("tree is nil at path:%s\n", path)
 	}
 
@@ -317,6 +319,110 @@ func (repo *Repository) TreeCheckout(tree *GitTree, path string) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+type RefRes struct {
+	Name string
+	Dir  *map[string]RefRes
+}
+
+func (repo *Repository) RefResolve(path string) (string, error) {
+	ok, err := utils.IsFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	if !ok {
+		return "", nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.HasPrefix(string(data), "ref: ") {
+		return repo.RefResolve(strings.Replace(string(data), "ref: ", "", 1))
+	}
+
+	return hex.EncodeToString(data), nil
+}
+
+func (repo *Repository) RefList(path string) (*map[string]RefRes, error) {
+	/*
+		path: default value is ""
+	*/var err error
+	if path == "" {
+		path, err = repo.RepoDir(false, "refs")
+		if err != nil {
+			return &map[string]RefRes{}, err
+		}
+	}
+
+	ret := map[string]RefRes{}
+
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return &map[string]RefRes{}, err
+	}
+
+	for _, e := range entries {
+		can := filepath.Join(path, e.Name())
+		info, err := os.Stat(can)
+		if err != nil {
+			return &map[string]RefRes{}, err
+		}
+
+		if info.IsDir() {
+			dir, err := repo.RefList(can)
+			if err != nil {
+				return &map[string]RefRes{}, err
+			}
+
+			ret[e.Name()] = RefRes{Name: "", Dir: dir}
+			continue
+		}
+
+		name, err := repo.RefResolve(can)
+		if err != nil {
+			return &map[string]RefRes{}, err
+		}
+
+		ret[e.Name()] = RefRes{Name: name, Dir: nil}
+	}
+
+	return &ret, nil
+}
+
+func (repo *Repository) ShowRepo(refs *map[string]RefRes, withHash bool, prefix string) error {
+	/*
+		withHash: defaul true
+		prefix: defalut ""
+	*/
+	if refs == nil {
+		return fmt.Errorf("ref is nil")
+	}
+
+	for key, val := range *refs {
+		if val.Dir != nil {
+			err := repo.ShowRepo(val.Dir, withHash, prefix)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		hash := ""
+		if withHash {
+			hash = val.Name
+		}
+		prefix_ := ""
+		if prefix != "" {
+			prefix_ = prefix + "/"
+		}
+		fmt.Printf("%s %s %s\n", hash, prefix_, key)
 	}
 
 	return nil

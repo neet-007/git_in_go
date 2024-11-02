@@ -173,7 +173,20 @@ func Cmd_rm(args string) {
 }
 
 func Cmd_show_ref(args string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while show-ref %v\n", err)
+	}
 
+	refs, err := repo.RefList("")
+	if err != nil {
+		log.Fatalf("Error while show-ref %v\n", err)
+	}
+
+	err = repo.ShowRepo(refs, true, "refs")
+	if err != nil {
+		log.Fatalf("Error while show-ref %v\n", err)
+	}
 }
 
 func Cmd_status(args string) {
