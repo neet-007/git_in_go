@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -63,7 +62,6 @@ func (repo *Repository) RepoPath(path ...string) string {
 }
 
 func (repo *Repository) RepoFile(mkdir bool, path ...string) (string, error) {
-
 	if _, err := repo.RepoDir(mkdir, path[:len(path)-1]...); err != nil {
 		return "", err
 	}
@@ -231,7 +229,10 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		return fmt.Errorf("Error while ls-tree expected object to be tree got:%s\n", objFmt)
 	}
 
-	objTree := obj.(*GitTree)
+	objTree, ok := obj.(*GitTree)
+	if !ok {
+		return fmt.Errorf("Error while ls-tree could not cast as tree\n")
+	}
 
 	for _, item := range objTree.items {
 		var objType []byte
@@ -243,21 +244,20 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 			objType = item.Mode[:2]
 		}
 
+		objTypeNumStr := string(objType)
 		switch {
-		case bytes.Equal(objType, []byte{'\x04'}):
+		case objTypeNumStr == "04":
 			objTypeStr = "tree"
-		case bytes.Equal(objType, []byte{'\x10'}):
+		case objTypeNumStr == "10":
 			objTypeStr = "blob"
-		case bytes.Equal(objType, []byte{'\x12'}):
+		case objTypeNumStr == "12":
 			objTypeStr = "blob"
-		case bytes.Equal(objType, []byte{'\x16'}):
+		case objTypeNumStr == "16":
 			objTypeStr = "commit"
 		default:
-			fmt.Printf("Weird tree leaf mode %v\n", item.Mode)
-			return fmt.Errorf("unknow type %s for path %s\n", string(objType), path)
+			return fmt.Errorf("unknow type %s bytes %v  for path %s\n", objTypeNumStr, objType, path)
 		}
 
-		fmt.Printf("recrusive:%v type:%s\n", recursive, objTypeStr)
 		if !(recursive && objTypeStr == "tree") {
 			fmt.Printf("%s %s %s\t %s\n", strings.Repeat("0", (6-len(item.Mode)))+string(item.Mode), objTypeStr, item.Sha, filepath.Join(prefix, item.Path))
 			continue
@@ -269,7 +269,6 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		}
 	}
 
-	fmt.Println("whyyyyyyy")
 	return nil
 }
 

@@ -13,60 +13,60 @@ type GitTreeLeaf struct {
 }
 
 func treeParseLeaf(read int, reader *bytes.Reader) (int, *GitTreeLeaf, error) {
-	startPos, _ := reader.Seek(0, 1)
-	raw := make([]byte, reader.Len())
-	reader.ReadAt(raw, startPos)
-
-	spc := bytes.IndexByte(raw, ' ')
-	if spc == -1 {
-		return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: could not find space")
+	if reader == nil {
+		return 0, &GitTreeLeaf{}, fmt.Errorf("reader is nil")
 	}
 
-	mode := make([]byte, spc)
-	n, err := reader.Read(mode)
+	spc, err := reader.ReadByte()
 	if err != nil {
-		return 0, &GitTreeLeaf{}, err
+		return 0, &GitTreeLeaf{}, fmt.Errorf("could not read the first byte")
 	}
 
-	read += n + 1
+	modeBytes := []byte{}
+	for spc != ' ' {
+		modeBytes = append(modeBytes, spc)
+		spc, err = reader.ReadByte()
+		if err != nil {
+			return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: could not find space")
+		}
+	}
+	read += len(modeBytes) + 1
 
-	lenMode := len(mode)
-	if lenMode != 5 && lenMode != 6 {
-		return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: len mode must be 5 or 6, got %d", lenMode)
+	if len(modeBytes) != 5 && len(modeBytes) != 6 {
+		return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: mode length must be 5 or 6, got %d", len(modeBytes))
+	}
+	if len(modeBytes) == 5 {
+		modeBytes = append(modeBytes, ' ')
 	}
 
-	if lenMode == 5 {
-		mode = append(mode, ' ')
+	pathBytes := []byte{}
+	for {
+		b, err := reader.ReadByte()
+		if err != nil {
+			return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: could not find null terminator")
+		}
+		if b == '\x00' {
+			break
+		}
+		pathBytes = append(pathBytes, b)
 	}
+	read += len(pathBytes) + 1
 
-	nullT := bytes.IndexByte(raw[read:], '\x00')
-	if nullT == -1 {
-		return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: could not find null terminator")
+	shaBytes := make([]byte, 20)
+	n, err := reader.Read(shaBytes)
+	if err != nil || n != 20 {
+		return 0, &GitTreeLeaf{}, fmt.Errorf("tree is malformed: SHA hash is incomplete")
 	}
+	read += n
 
-	path := make([]byte, nullT)
-	n, err = reader.Read(path)
-	if err != nil {
-		return 0, &GitTreeLeaf{}, err
-	}
-
-	read += n + 1
-
-	sha := make([]byte, 20)
-	n, err = reader.Read(sha)
-	if err != nil {
-		return 0, &GitTreeLeaf{}, err
-	}
-
-	shaHex := hex.EncodeToString(sha)
+	shaHex := hex.EncodeToString(shaBytes)
 	if len(shaHex) < 40 {
 		shaHex = fmt.Sprintf("%040s", shaHex)
 	}
-	read += n + 1
 
 	return read, &GitTreeLeaf{
-		Mode: mode,
-		Path: string(path),
+		Mode: modeBytes,
+		Path: string(pathBytes),
 		Sha:  shaHex,
 	}, nil
 }
@@ -82,14 +82,12 @@ func TreeParser(raw []byte) ([]*GitTreeLeaf, error) {
 		n, obj, err := treeParseLeaf(read, reader)
 		if err != nil {
 			if len(ret) == 0 {
-				fmt.Println("errrrrrrrrrr?")
 				return []*GitTreeLeaf{}, err
 			}
 			return ret, err
 		}
 
 		read += n
-		fmt.Printf("read:%d vs len:%d\n", n, lenRaw)
 		ret = append(ret, obj)
 	}
 
