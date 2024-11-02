@@ -224,6 +224,13 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		return err
 	}
 
+	if objFmt, err := obj.GetFmt(); err != nil || string(objFmt) != "tree" {
+		if err != nil {
+			return fmt.Errorf("Error while ls-tree err:%w\n", err)
+		}
+		return fmt.Errorf("Error while ls-tree expected object to be tree got:%s\n", objFmt)
+	}
+
 	objTree := obj.(*GitTree)
 
 	for _, item := range objTree.items {
@@ -250,6 +257,7 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 			return fmt.Errorf("unknow type %s for path %s\n", string(objType), path)
 		}
 
+		fmt.Printf("recrusive:%v type:%s\n", recursive, objTypeStr)
 		if !(recursive && objTypeStr == "tree") {
 			fmt.Printf("%s %s %s\t %s\n", strings.Repeat("0", (6-len(item.Mode)))+string(item.Mode), objTypeStr, item.Sha, filepath.Join(prefix, item.Path))
 			continue
@@ -257,10 +265,11 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 
 		err := repo.LsTree(item.Sha, recursive, filepath.Join(prefix, item.Path))
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 
+	fmt.Println("whyyyyyyy")
 	return nil
 }
 

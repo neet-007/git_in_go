@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"github.com/neet-007/git_in_go/internal/sharedtypes"
 	"github.com/neet-007/git_in_go/internal/utils"
 )
@@ -61,7 +63,7 @@ func (commit *GitCommit) Serialize() ([]byte, error) {
 }
 
 func (commit *GitCommit) Deserialize(data []byte) error {
-	kvlm, err := utils.KvlmParser(data, 0, nil)
+	kvlm, err := utils.KvlmParser(&data, 0, nil)
 	if err != nil {
 		return err
 	}
@@ -72,7 +74,11 @@ func (commit *GitCommit) Deserialize(data []byte) error {
 
 func (commit *GitCommit) Init(data []byte) {
 	commit.Fmt = "commit"
-	commit.Kvlm = &sharedtypes.Kvlm{}
+	err := commit.Deserialize(data)
+	if err != nil {
+		fmt.Printf("FIX THIS NOT THE WAY TO DO IT BUT GOT ERROR WITH INIT COMMIT:%w", err)
+		return
+	}
 }
 
 func (commit *GitCommit) GetFmt() ([]byte, error) {
@@ -94,7 +100,12 @@ func (tree *GitTree) Deserialize(data []byte) error {
 }
 
 func (tree *GitTree) Init(data []byte) {
-	tree.items = []*GitTreeLeaf{}
+	tree.Fmt = "tree"
+	err := tree.Deserialize(data)
+	if err != nil {
+		fmt.Printf("FIX THIS NOT THE WAY TO DO IT BUT GOT ERROR WITH INIT TREE:%w\n", err)
+		return
+	}
 }
 
 func (tree *GitTree) GetFmt() ([]byte, error) {
