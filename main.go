@@ -77,7 +77,20 @@ func main() {
 	case "status":
 		bridges.Cmd_status(args[0])
 	case "tag":
-		bridges.Cmd_tag(args[0])
+		var tagObjectFlag bool
+
+		tagObjectCmd := flag.NewFlagSet("ls-tree", flag.ExitOnError)
+		tagObjectCmd.BoolVar(&tagObjectFlag, "a", false, "recursively print the tree")
+
+		tagObjectCmd.Parse(args[2:])
+
+		positionalArgs := tagObjectCmd.Args()
+
+		if len(positionalArgs) == 0 {
+			bridges.Cmd_tag("", "", tagObjectFlag)
+		} else {
+			bridges.Cmd_tag(positionalArgs[0], positionalArgs[1], tagObjectFlag)
+		}
 	default:
 		log.Fatal("unkown command")
 	}

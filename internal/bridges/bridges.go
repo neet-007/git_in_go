@@ -183,7 +183,7 @@ func Cmd_show_ref(args string) {
 		log.Fatalf("Error while show-ref %v\n", err)
 	}
 
-	err = repo.ShowRepo(refs, true, "refs")
+	err = repo.ShowRefs(refs, true, "refs")
 	if err != nil {
 		log.Fatalf("Error while show-ref %v\n", err)
 	}
@@ -193,6 +193,37 @@ func Cmd_status(args string) {
 
 }
 
-func Cmd_tag(args string) {
+func Cmd_tag(name string, object string, createTagObject bool) {
+	/*
+		name: default val is ""
+		object: default val is ""
+		createTagObject: default val is false
+	*/
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while tag %v\n", err)
+	}
 
+	if name != "" {
+		err := repo.TagCreate(name, object, createTagObject)
+		if err != nil {
+			log.Fatalf("Error while tag %v\n", err)
+		}
+
+		return
+	}
+
+	refs, err := repo.RefList("")
+	if err != nil {
+		log.Fatalf("Error while tag %v\n", err)
+	}
+
+	if refs == nil {
+		log.Fatalf("Error while tag refs is nil name:%s object:%s createTagObject:%v\n", name, object, createTagObject)
+	}
+
+	err = repo.ShowRefs((*refs)["tags"].Dir, false, "")
+	if err != nil {
+		log.Fatalf("Error while tag %v\n", err)
+	}
 }

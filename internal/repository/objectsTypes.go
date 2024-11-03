@@ -30,8 +30,8 @@ type GitTree struct {
 }
 
 type GitTag struct {
-	Fmt      string
-	BlobData []byte
+	Fmt  string
+	Kvlm *sharedtypes.Kvlm
 }
 
 func (blob *GitBlob) Serialize() ([]byte, error) {
@@ -113,17 +113,31 @@ func (tree *GitTree) GetFmt() ([]byte, error) {
 }
 
 func (tag *GitTag) Serialize() ([]byte, error) {
-	return tag.BlobData, nil
+	kvlm, err := utils.KvlmSerialize(tag.Kvlm)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return kvlm, nil
 }
 
 func (tag *GitTag) Deserialize(data []byte) error {
-	tag.BlobData = data
+	kvlm, err := utils.KvlmParser(&data, 0, nil)
+	if err != nil {
+		return err
+	}
 
+	tag.Kvlm = kvlm
 	return nil
 }
 
 func (tag *GitTag) Init(data []byte) {
-
+	tag.Fmt = "commit"
+	err := tag.Deserialize(data)
+	if err != nil {
+		fmt.Printf("FIX THIS NOT THE WAY TO DO IT BUT GOT ERROR WITH INIT COMMIT:%w", err)
+		return
+	}
 }
 
 func (tag *GitTag) GetFmt() ([]byte, error) {
