@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -348,7 +347,7 @@ func (repo *Repository) RefResolve(path string) (string, error) {
 		return repo.RefResolve(strings.Replace(string(data), "ref: ", "", 1))
 	}
 
-	return hex.EncodeToString(data), nil
+	return string(data[:len(data)-1]), nil
 }
 
 func (repo *Repository) RefList(path string) (*map[string]RefRes, error) {
