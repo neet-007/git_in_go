@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 
@@ -37,8 +36,7 @@ func main() {
 		positionalArgs := hashObjectCmd.Args()
 
 		if len(positionalArgs) == 0 {
-			fmt.Println("You must provide a file path for hash-object.")
-			os.Exit(1)
+			log.Fatal("You must provide a file path for hash-object.")
 		}
 
 		bridges.CmdHashObject(writeFlag, typeFlag, positionalArgs[0])
@@ -46,13 +44,25 @@ func main() {
 		bridges.CmdInit(args...)
 	case "log":
 		if len(args) < 3 {
-			fmt.Println("heeeeeeeeeeeeeeeeeeeeead")
 			bridges.CmdLog("HEAD")
 		} else {
 			bridges.CmdLog(args[2])
 		}
 	case "ls-files":
-		bridges.Cmd_ls_files(args[0])
+		var verboseFlag bool
+
+		lsFilesCmd := flag.NewFlagSet("ls-files", flag.ExitOnError)
+		lsFilesCmd.BoolVar(&verboseFlag, "verbose", false, "recursively print the tree")
+
+		lsFilesCmd.Parse(args[2:])
+
+		positionalArgs := lsFilesCmd.Args()
+
+		if len(positionalArgs) != 0 {
+			log.Fatal("You must not provide positional args")
+		}
+
+		bridges.CmdLsFiles(verboseFlag)
 	case "ls-tree":
 		var recursiceFlag bool
 
@@ -64,13 +74,25 @@ func main() {
 		positionalArgs := lsTreeCmd.Args()
 
 		if len(positionalArgs) == 0 {
-			fmt.Println("You must provide a dir or file path for ls-tree")
-			os.Exit(1)
+			log.Fatal("You must provide a dir or file path for ls-tree")
 		}
 
 		bridges.CmdLsTree(positionalArgs[0], recursiceFlag)
 	case "rev-parse":
-		bridges.Cmd_rev_parse(args[0])
+		var typeFlag string
+
+		revParseCmd := flag.NewFlagSet("rev-parse", flag.ExitOnError)
+		revParseCmd.StringVar(&typeFlag, "git-type", "", "expceted type")
+
+		revParseCmd.Parse(args[2:])
+
+		positionalArgs := revParseCmd.Args()
+
+		if len(positionalArgs) == 0 {
+			log.Fatal("You must provide a dir or file path for ls-tree")
+		}
+
+		bridges.Cmd_rev_parse(typeFlag, positionalArgs[0])
 	case "rm":
 		bridges.Cmd_rm(args[0])
 	case "show-ref":
@@ -80,7 +102,7 @@ func main() {
 	case "tag":
 		var tagObjectFlag bool
 
-		tagObjectCmd := flag.NewFlagSet("ls-tree", flag.ExitOnError)
+		tagObjectCmd := flag.NewFlagSet("tag", flag.ExitOnError)
 		tagObjectCmd.BoolVar(&tagObjectFlag, "a", false, "recursively print the tree")
 
 		tagObjectCmd.Parse(args[2:])
@@ -88,7 +110,6 @@ func main() {
 		positionalArgs := tagObjectCmd.Args()
 
 		if len(positionalArgs) == 0 {
-			fmt.Println("heeeeeere")
 			bridges.Cmd_tag("", "", tagObjectFlag)
 		} else {
 			bridges.Cmd_tag(positionalArgs[0], positionalArgs[1], tagObjectFlag)

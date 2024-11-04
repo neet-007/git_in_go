@@ -64,6 +64,10 @@ func (repo *Repository) RepoPath(path ...string) string {
 }
 
 func (repo *Repository) RepoFile(mkdir bool, path ...string) (string, error) {
+	/*
+		mkdir: default val is false
+	*/
+
 	if _, err := repo.RepoDir(mkdir, path[:len(path)-1]...); err != nil {
 		return "", err
 	}

@@ -157,8 +157,31 @@ func CmdLog(commit string) {
 	fmt.Println("}")
 }
 
-func Cmd_ls_files(args string) {
+func CmdLsFiles(verbose bool) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while ls-files: %v\n", err)
+	}
 
+	index, err := repo.IndexRead()
+	if err != nil {
+		log.Fatalf("Error while ls-files: %v\n", err)
+	}
+	if index == nil {
+		log.Fatalf("Error while ls-files: index is nil\n")
+	}
+
+	if verbose {
+		fmt.Printf("Index file format v%d, containing %d entries.\n", index.Version, len(index.Entries))
+	}
+
+	for _, e := range index.Entries {
+		fmt.Printf("%s\n", e.Name)
+
+		if verbose {
+			//I DONT KNOW HOW THEY PRINT IT
+		}
+	}
 }
 
 func CmdLsTree(path string, recursive bool) {
@@ -174,8 +197,18 @@ func CmdLsTree(path string, recursive bool) {
 
 }
 
-func Cmd_rev_parse(args string) {
+func Cmd_rev_parse(typeArg string, name string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while rev-parse name:%s, type:%s, %v", name, typeArg, err)
+	}
 
+	sha, err := repo.ObjectFind(name, typeArg, true)
+	if err != nil {
+		log.Fatalf("Error while rev-parse name:%s, type:%s, %v", name, typeArg, err)
+	}
+
+	fmt.Printf("%s\n", sha)
 }
 
 func Cmd_rm(args string) {
