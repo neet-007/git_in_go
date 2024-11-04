@@ -14,6 +14,7 @@ import (
 )
 
 func (repo *Repository) ObjectRead(sha string) (GitObject, error) {
+	fmt.Printf("sha:%s\n", sha)
 	path, err := repo.RepoFile(false, "objects", sha[:2], sha[2:])
 
 	if err != nil {
@@ -147,12 +148,76 @@ func ObjectWrite(obj GitObject, repo *Repository) (string, error) {
 	return sha, nil
 }
 
-func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) string {
+func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) (string, error) {
 	/*
 		fmtType: defailt val is ""
-		follow: default val is false
+		follow: default val is true
 	*/
-	return name
+	sha, err := repo.ObjectResolve(name)
+	if err != nil {
+		return "", fmt.Errorf("for name:%s, fmtType:%s, follow:%v error:%w\n", name, fmtType, follow, err)
+	}
+
+	if len(sha) != 1 {
+		return "", fmt.Errorf("sha candidates size is not 1 got %d found for name:%s, fmtType:%s, follow:%v\n", len(sha), name, fmtType, follow)
+	}
+
+	shaStr := sha[0]
+
+	if fmtType == "" {
+		return shaStr, nil
+	}
+
+	for {
+		obj, err := repo.ObjectRead(shaStr)
+		if err != nil {
+			return "", fmt.Errorf("for name:%s, fmtType:%s, follow:%v error:%w\n", name, fmtType, follow, err)
+		}
+
+		objFmt, err := obj.GetFmt()
+		if err != nil {
+			return "", fmt.Errorf("for name:%s, fmtType:%s, follow:%v error:%w\n", name, fmtType, follow, err)
+		}
+
+		if string(objFmt) == fmtType {
+			break
+		}
+
+		if !follow {
+			return "", fmt.Errorf("not follow name:%s, fmtType:%s, follow:%v error:%w\n", name, fmtType, follow)
+		}
+
+		if fmtType == "tag" {
+			objTag, ok := obj.(*GitTag)
+			if !ok {
+				return "", fmt.Errorf("could not convert obj to GitTag for name:%s, fmtType:%s, follow:%v\n", name, fmtType, follow)
+			}
+
+			var combined []byte
+			for _, slice := range (*objTag.Kvlm)["object"] {
+				combined = append(combined, slice...)
+			}
+
+			shaStr = string(combined)
+		} else if string(objFmt) == "commit" && fmtType == "tree" {
+			objCommit, ok := obj.(*GitCommit)
+			if !ok {
+				return "", fmt.Errorf("could not convert obj to GitCommit for name:%s, fmtType:%s, follow:%v\n", name, fmtType, follow)
+			}
+
+			var combined []byte
+			for _, slice := range (*objCommit.Kvlm)["tree"] {
+				combined = append(combined, slice...)
+			}
+
+			fmt.Printf("combinde:%s\n", string(combined))
+			shaStr = string(combined)
+		} else {
+			return "", fmt.Errorf("last case name:%s, fmtType:%s, follow:%v error:%w\n", name, fmtType, follow)
+		}
+	}
+
+	return shaStr, nil
 }
 
 func ObjectHash(file *os.File, fmtType string, repo *Repository) (string, error) {

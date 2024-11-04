@@ -46,6 +46,7 @@ func main() {
 		bridges.CmdInit(args...)
 	case "log":
 		if len(args) < 3 {
+			fmt.Println("heeeeeeeeeeeeeeeeeeeeead")
 			bridges.CmdLog("HEAD")
 		} else {
 			bridges.CmdLog(args[2])
@@ -87,6 +88,7 @@ func main() {
 		positionalArgs := tagObjectCmd.Args()
 
 		if len(positionalArgs) == 0 {
+			fmt.Println("heeeeeere")
 			bridges.Cmd_tag("", "", tagObjectFlag)
 		} else {
 			bridges.Cmd_tag(positionalArgs[0], positionalArgs[1], tagObjectFlag)

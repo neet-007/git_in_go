@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -197,7 +198,12 @@ func repoDefaultConfig() (*ini.File, error) {
 }
 
 func (repo *Repository) CatFile(objName string, fmtType string) {
-	obj, err := repo.ObjectRead(repo.ObjectFind(objName, fmtType, true))
+	objSha, err := repo.ObjectFind(objName, fmtType, true)
+	if err != nil {
+		log.Fatalf("Error while cat-file read: %v\n", err)
+	}
+
+	obj, err := repo.ObjectRead(objSha)
 	if err != nil || obj == nil {
 		log.Fatalf("Error while cat-file read: %v\n", err)
 	}
@@ -216,7 +222,11 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		prefix: default val is ""
 	*/
 
-	sha := repo.ObjectFind(path, "tree", false)
+	sha, err := repo.ObjectFind(path, "tree", true)
+	if err != nil {
+		return err
+	}
+
 	obj, err := repo.ObjectRead(sha)
 
 	if err != nil {
@@ -275,7 +285,6 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 
 func (repo *Repository) TreeCheckout(tree *GitTree, path string) error {
 	if tree == nil {
-		println("gooooootacha")
 		return fmt.Errorf("tree is nil at path:%s\n", path)
 	}
 
@@ -283,6 +292,8 @@ func (repo *Repository) TreeCheckout(tree *GitTree, path string) error {
 		if item == nil {
 			return fmt.Errorf("tree item is nil at path:%s\n", path)
 		}
+
+		fmt.Printf("\n\nsha:%s\npath:%s\n\n", item.Sha, item.Path)
 
 		obj, err := repo.ObjectRead(item.Sha)
 		if err != nil {
@@ -330,13 +341,20 @@ type RefRes struct {
 }
 
 func (repo *Repository) RefResolve(path string) (string, error) {
+	/*
+		path, err := repo.RepoFile(false, path)
+		if err != nil {
+			return "", err
+		}
+	*/
+
 	ok, err := utils.IsFile(path)
 	if err != nil {
 		return "", err
 	}
 
 	if !ok {
-		return "", nil
+		return "", fmt.Errorf("not a file path:%s\n", path)
 	}
 
 	data, err := os.ReadFile(path)
@@ -354,7 +372,8 @@ func (repo *Repository) RefResolve(path string) (string, error) {
 func (repo *Repository) RefList(path string) (*map[string]RefRes, error) {
 	/*
 		path: default value is ""
-	*/var err error
+	*/
+	var err error
 	if path == "" {
 		path, err = repo.RepoDir(false, "refs")
 		if err != nil {
@@ -432,7 +451,10 @@ func (repo *Repository) TagCreate(name string, ref string, createTagObject bool)
 	/*
 		createTagObject: default value is false
 	*/
-	sha := repo.ObjectFind(ref, "", false)
+	sha, err := repo.ObjectFind(ref, "", false)
+	if err != nil {
+		return err
+	}
 
 	if createTagObject {
 		tag := &GitTag{}
@@ -456,7 +478,7 @@ func (repo *Repository) TagCreate(name string, ref string, createTagObject bool)
 		return nil
 	}
 
-	err := repo.RefCreate("tags/"+name, sha)
+	err = repo.RefCreate("tags/"+name, sha)
 	if err != nil {
 		return err
 	}
@@ -475,6 +497,63 @@ func (repo *Repository) RefCreate(refName string, sha string) error {
 
 	file.Write([]byte(sha + "\n"))
 	return nil
+}
+
+func (repo *Repository) ObjectResolve(name string) ([]string, error) {
+	fmt.Printf("name:%s\n", name)
+	if strings.TrimSpace(name) == "" {
+		return []string{}, fmt.Errorf("name is empty")
+	}
+
+	candidates := []string{}
+
+	if name == "HEAD" {
+		res, err := repo.RefResolve(name)
+		if err != nil {
+			return []string{}, err
+		}
+
+		return []string{res}, nil
+	}
+
+	lenName := len(name)
+	if lenName < 4 || lenName > 40 {
+		return []string{}, fmt.Errorf("len name is not valid must be 4 < %d < 40 name:%s\n", lenName, name)
+	}
+
+	_, err := hex.DecodeString(name)
+	if err == nil {
+		name = strings.ToLower(name)
+		prefix := name[:2]
+		path, err := repo.RepoDir(false, "objects", prefix)
+		if err != nil {
+			return []string{}, err
+		}
+
+		rem := name[2:]
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return []string{}, err
+		}
+
+		for _, e := range entries {
+			if strings.HasPrefix(e.Name(), rem) {
+				candidates = append(candidates, prefix+e.Name())
+			}
+		}
+	}
+
+	asTag, err := repo.RefResolve("refs/tags/" + name)
+	if err == nil {
+		candidates = append(candidates, asTag)
+	}
+
+	asBranch, err := repo.RefResolve("refs/heads/" + name)
+	if err == nil {
+		candidates = append(candidates, asBranch)
+	}
+
+	return candidates, nil
 }
 
 func FindRepo(path string, required bool) (*Repository, error) {

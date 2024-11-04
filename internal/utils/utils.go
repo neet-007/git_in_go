@@ -5,18 +5,26 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/neet-007/git_in_go/internal/sharedtypes"
 )
 
 func IsFile(path string) (bool, error) {
-	info, err := os.Stat(path)
+	info, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return false, nil
+			return false, fmt.Errorf("path does not exist: %w", err)
 		}
 		return false, err
 	}
+
+	// Check if the path is within .git/refs (valid Git reference)
+	if strings.Contains(path, filepath.Join(".git", "refs")) {
+		return true, nil
+	}
+
+	// Check if it's a regular file
 	return info.Mode().IsRegular(), nil
 }
 

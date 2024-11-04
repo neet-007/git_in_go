@@ -17,7 +17,7 @@ func Cmd_add(args string) {
 func CmdCatFile(args ...string) {
 	repo, err := repository.FindRepo(".", true)
 	if err != nil {
-		log.Fatalf("Error with cat-file: %v", err)
+		log.Fatalf("Error with cat-file: %v\n", err)
 	}
 
 	repo.CatFile(args[3], args[2])
@@ -31,67 +31,72 @@ func Cmd_check_ignore(args string) {
 func CmdCheckout(commit string, path string) {
 	repo, err := repository.FindRepo(".", true)
 	if err != nil {
-		log.Fatalf("Error with checkout: %v", err)
+		log.Fatalf("Error with checkout: %v\n", err)
 	}
 
-	obj, err := repo.ObjectRead(repo.ObjectFind(commit, "", false))
+	objSha, err := repo.ObjectFind(commit, "", true)
 	if err != nil {
-		log.Fatalf("Error with checkout: %v", err)
+		log.Fatalf("Error with checkout: %v\n", err)
+	}
+
+	obj, err := repo.ObjectRead(objSha)
+	if err != nil {
+		log.Fatalf("Error with checkout: %v\n", err)
 	}
 
 	objFmt, err := obj.GetFmt()
 	if err != nil {
-		log.Fatalf("Error with checkout: %v", err)
+		log.Fatalf("Error with checkout: %v\n", err)
 	}
 
 	if string(objFmt) == "commit" {
 		objTree := obj.(*repository.GitCommit)
 		obj, err = repo.ObjectRead(string(bytes.Join((*objTree.Kvlm)["tree"], nil)))
 		if err != nil {
-			log.Fatalf("Error with checkout: %v", err)
+			log.Fatalf("Error with checkout: %v\n", err)
 		}
 	}
 
 	if _, err := os.Stat(path); err == nil {
 		info, err := os.Stat(path)
 		if err != nil {
-			log.Fatalf("Error with checkout: %v", err)
+			log.Fatalf("Error with checkout: %v\n", err)
 		}
 		if !info.IsDir() {
-			log.Fatalf("Error with checkout: %v", err)
+			log.Fatalf("Error with checkout: dir does not exits path:%s\n", path)
 		}
 
 		contents, err := os.ReadDir(path)
 		if err != nil {
-			log.Fatalf("Error with checkout: %v", err)
+			log.Fatalf("Error with checkout: %v\n", err)
 		}
 		if len(contents) > 0 {
-			log.Fatalf("Error with checkout: %v", err)
+			log.Fatalf("Error with checkout: dir is not empty path:%s\n", path)
 		}
 	} else if os.IsNotExist(err) {
 		if err := os.MkdirAll(path, 0755); err != nil {
-			log.Fatalf("Error with checkout: %v", err)
+			log.Fatalf("Error with checkout: %v\n", err)
 		}
 	} else {
-		log.Fatalf("Error with checkout: %v", err)
+		log.Fatalf("Error with checkout: %v\n", err)
 	}
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		fmt.Println("Error resolving absolute path:", err)
+		fmt.Println("Error resolving absolute path:%s, err:%s\n", path, err)
 		return
 	}
 
 	realPath, err := filepath.EvalSymlinks(absPath)
 	if err != nil {
-		fmt.Println("Error resolving real path:", err)
+		fmt.Println("Error resolving real path:\n", err)
 		return
 	}
 
 	objTree := obj.(*repository.GitTree)
 	err = repo.TreeCheckout(objTree, realPath)
 	if err != nil {
-		fmt.Println("Error resolving real path:", err)
+		fmt.Println("Error resolving real path:\n", err)
 	}
 }
 
@@ -143,7 +148,12 @@ func CmdLog(commit string) {
 	}
 
 	fmt.Println("digraph gitlog{\n node[shape=rect]")
-	repository.LogGraphviz(repo, commit, &map[string]byte{})
+	path, err := repo.ObjectFind(commit, "", true)
+	if err != nil {
+		log.Fatalf("Error while logging: %v\n", err)
+	}
+
+	repository.LogGraphviz(repo, path, &map[string]byte{})
 	fmt.Println("}")
 }
 
