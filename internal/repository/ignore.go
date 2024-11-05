@@ -56,7 +56,10 @@ func GitIgnoreParseLines(lines []string) []GitIgnoreLine {
 }
 
 func (repo *Repository) GitIgnoreRead() (*GitIgnore, error) {
-	ret := GitIgnore{}
+	ret := GitIgnore{
+		Absolue: [][]GitIgnoreLine{},
+		Scoped:  &map[string][]GitIgnoreLine{},
+	}
 
 	repoFile := filepath.Join(repo.Gitdir, "info/exclude")
 	isFile, err := utils.IsFile(repoFile)
