@@ -98,7 +98,7 @@ func main() {
 	case "show-ref":
 		bridges.Cmd_show_ref(args[0])
 	case "status":
-		bridges.Cmd_status(args[0])
+		bridges.CmdStatus()
 	case "tag":
 		var tagObjectFlag bool
 

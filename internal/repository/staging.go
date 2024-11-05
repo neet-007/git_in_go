@@ -257,7 +257,6 @@ func (repo *Repository) IndexRead() (*GitIndex, error) {
 
 		nameLength := flags & 0b0000111111111111
 		nameBuff := make([]byte, nameLength, nameLength)
-		fmt.Println("bef name")
 		if nameLength < 0xFFF {
 			n, err = file.ReadAt(nameBuff, int64(idx))
 			if err != nil {

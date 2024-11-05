@@ -248,8 +248,21 @@ func Cmd_show_ref(args string) {
 	}
 }
 
-func Cmd_status(args string) {
+func CmdStatus() {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while status: %v\n", err)
+	}
 
+	index, err := repo.IndexRead()
+	if err != nil {
+		log.Fatalf("Error while status: %v\n", err)
+	}
+
+	repo.StatusBranch()
+	repo.StatusHeadIndex(index)
+	fmt.Println()
+	repo.StatusIndexWorktree(index)
 }
 
 func Cmd_tag(name string, object string, createTagObject bool) {
