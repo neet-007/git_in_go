@@ -345,12 +345,14 @@ type RefRes struct {
 }
 
 func (repo *Repository) RefResolve(path string) (string, error) {
-	/*
-		path, err := repo.RepoFile(false, path)
+	var err error
+	if !filepath.IsAbs(path) {
+		path, err = repo.RepoFile(false, path)
 		if err != nil {
 			return "", err
 		}
-	*/
+	}
+	path = strings.TrimSpace(path)
 
 	ok, err := utils.IsFile(path)
 	if err != nil {
@@ -503,9 +505,8 @@ func (repo *Repository) RefCreate(refName string, sha string) error {
 }
 
 func (repo *Repository) ObjectResolve(name string) ([]string, error) {
-	fmt.Printf("name:%s\n", name)
 	if strings.TrimSpace(name) == "" {
-		return []string{}, fmt.Errorf("name is empty")
+		return []string{}, fmt.Errorf("name is empty\n")
 	}
 
 	candidates := []string{}
