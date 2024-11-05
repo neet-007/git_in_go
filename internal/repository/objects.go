@@ -194,7 +194,7 @@ func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) (st
 			}
 
 			var combined []byte
-			for _, slice := range (*objTag.Kvlm)["object"] {
+			for _, slice := range (*(*objTag.Kvlm).Map)["object"] {
 				combined = append(combined, slice...)
 			}
 
@@ -206,7 +206,7 @@ func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) (st
 			}
 
 			var combined []byte
-			for _, slice := range (*objCommit.Kvlm)["tree"] {
+			for _, slice := range (*(*&objCommit.Kvlm).Map)["tree"] {
 				combined = append(combined, slice...)
 			}
 

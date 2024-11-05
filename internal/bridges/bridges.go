@@ -67,7 +67,7 @@ func CmdCheckout(commit string, path string) {
 
 	if string(objFmt) == "commit" {
 		objTree := obj.(*repository.GitCommit)
-		obj, err = repo.ObjectRead(string(bytes.Join((*objTree.Kvlm)["tree"], nil)))
+		obj, err = repo.ObjectRead(string(bytes.Join((*(*objTree.Kvlm).Map)["tree"], nil)))
 		if err != nil {
 			log.Fatalf("Error with checkout: %v\n", err)
 		}

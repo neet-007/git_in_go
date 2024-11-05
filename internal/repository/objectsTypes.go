@@ -63,10 +63,11 @@ func (commit *GitCommit) Serialize() ([]byte, error) {
 }
 
 func (commit *GitCommit) Deserialize(data []byte) error {
-	kvlm, err := utils.KvlmParser(&data, 0, nil)
+	kvlm, err := utils.KvlmParserWrapper(&data, 0, nil)
 	if err != nil {
 		return err
 	}
+	kvlm.Sort()
 
 	commit.Kvlm = kvlm
 	return nil
@@ -122,10 +123,11 @@ func (tag *GitTag) Serialize() ([]byte, error) {
 }
 
 func (tag *GitTag) Deserialize(data []byte) error {
-	kvlm, err := utils.KvlmParser(&data, 0, nil)
+	kvlm, err := utils.KvlmParserWrapper(&data, 0, nil)
 	if err != nil {
 		return err
 	}
+	kvlm.Sort()
 
 	tag.Kvlm = kvlm
 	return nil

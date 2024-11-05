@@ -37,7 +37,7 @@ func LogGraphviz(repo *Repository, sha string, seen *map[string]byte) error {
 	shortHash := sha[:8]
 
 	var messageBytes []byte
-	for _, line := range (*gitCommit.Kvlm)[""] {
+	for _, line := range (*(*gitCommit.Kvlm).Map)[""] {
 		messageBytes = append(messageBytes, line...)
 	}
 	message := string(messageBytes)
@@ -51,7 +51,7 @@ func LogGraphviz(repo *Repository, sha string, seen *map[string]byte) error {
 
 	fmt.Printf("  c_%s [label=\"%s: %s\"]\n", sha, shortHash, message)
 
-	parents, ok := (*gitCommit.Kvlm)["parent"]
+	parents, ok := (*(*gitCommit.Kvlm).Map)["parent"]
 	if !ok {
 		return nil
 	}

@@ -51,11 +51,14 @@ func RealPath(path string) (string, error) {
 }
 
 // -IMPORTANT  MAKE THIS ORDER DICT IMPORTANT
-func KvlmParser(raw *[]byte, start int, parsed *sharedtypes.Kvlm) (*sharedtypes.Kvlm, error) {
+func KvlmParserWrapper(raw *[]byte, start int, parsed *sharedtypes.Kvlm) (*sharedtypes.Kvlm, error) {
 	if raw == nil || parsed == nil {
-		parsed = &sharedtypes.Kvlm{}
+		parsed = sharedtypes.NewKvlm()
 	}
 
+	return KvlmParser(raw, start, parsed)
+}
+func KvlmParser(raw *[]byte, start int, parsed *sharedtypes.Kvlm) (*sharedtypes.Kvlm, error) {
 	spc := bytes.IndexByte((*raw)[start:], ' ') + start
 	nl := bytes.IndexByte((*raw)[start:], '\n') + start
 
@@ -64,7 +67,8 @@ func KvlmParser(raw *[]byte, start int, parsed *sharedtypes.Kvlm) (*sharedtypes.
 			return nil, fmt.Errorf("final message reached but nl != start nl:%d start:%d\n", nl, start)
 		}
 
-		(*parsed)[""] = append((*parsed)[""], (*raw)[start+1:])
+		val := append((*(*parsed).Map)[""], (*raw)[start+1:])
+		parsed.Insert("", val)
 
 		return parsed, nil
 	}
@@ -79,11 +83,11 @@ func KvlmParser(raw *[]byte, start int, parsed *sharedtypes.Kvlm) (*sharedtypes.
 		}
 	}
 
-	val, ok := (*parsed)[string(key)]
+	val, ok := (*(*parsed).Map)[string(key)]
 	if !ok {
-		(*parsed)[string(key)] = [][]byte{(*raw)[spc+1 : end]}
+		(*parsed).Insert(string(key), [][]byte{(*raw)[spc+1 : end]})
 	} else {
-		(*parsed)[string(key)] = append(val, (*raw)[spc+1:end])
+		(*parsed).Insert(string(key), append(val, (*raw)[spc+1:end]))
 	}
 
 	return KvlmParser(raw, end+1, parsed)
@@ -95,12 +99,12 @@ func KvlmSerialize(kvlm *sharedtypes.Kvlm) ([]byte, error) {
 	}
 	ret := []byte{}
 
-	for key := range *kvlm {
+	for _, key := range kvlm.OrderedKeys {
 		if key == "" {
 			continue
 		}
 
-		val, ok := (*kvlm)[key]
+		val, ok := (*(*kvlm).Map)[key]
 		if !ok {
 			return []byte{}, fmt.Errorf("key does not have value in kvml key:%s\n", key)
 		}
@@ -112,7 +116,7 @@ func KvlmSerialize(kvlm *sharedtypes.Kvlm) ([]byte, error) {
 		ret = append(ret, '\n')
 	}
 
-	val, ok := (*kvlm)[""]
+	val, ok := (*(*kvlm).Map)[""]
 	if !ok {
 		return []byte{}, fmt.Errorf("key does not have value in kvml key: FINAL MESSAGE KEY\n")
 	}
