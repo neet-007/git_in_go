@@ -18,7 +18,7 @@ func main() {
 	case "cat-file":
 		bridges.CmdCatFile(args...)
 	case "check-ignore":
-		bridges.Cmd_check_ignore(args[0])
+		bridges.CmdCheckIgnore(args[2:]...)
 	case "checkout":
 		bridges.CmdCheckout(args[2], args[3])
 	case "commit":

@@ -2,6 +2,7 @@ package bridges
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -24,8 +25,23 @@ func CmdCatFile(args ...string) {
 
 }
 
-func Cmd_check_ignore(args string) {
+func CmdCheckIgnore(paths ...string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while check-ignore: %v\n", err)
+	}
 
+	rules, err := repo.GitIgnoreRead()
+
+	for _, path := range paths {
+		res, err := repository.CheckIgnore(rules, path)
+		if err != nil && !errors.Is(err, repository.GitIgnoreDefaultCheck) {
+			log.Fatalf("Error while check-ignore: %v\n", err)
+		}
+		if err == nil && res {
+			fmt.Printf("%s ", path)
+		}
+	}
 }
 
 func CmdCheckout(commit string, path string) {
