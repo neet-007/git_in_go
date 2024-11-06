@@ -26,7 +26,7 @@ type GitCommit struct {
 
 type GitTree struct {
 	Fmt   string
-	items []*GitTreeLeaf
+	Items []*GitTreeLeaf
 }
 
 type GitTag struct {
@@ -96,7 +96,7 @@ func (tree *GitTree) Deserialize(data []byte) error {
 		return err
 	}
 
-	tree.items = items
+	tree.Items = items
 	return nil
 }
 

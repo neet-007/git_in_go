@@ -56,6 +56,7 @@ func GitIgnoreParseLines(lines []string) []GitIgnoreLine {
 }
 
 func (repo *Repository) GitIgnoreRead() (*GitIgnore, error) {
+	fmt.Println("starrrrrrrt")
 	ret := GitIgnore{
 		Absolue: [][]GitIgnoreLine{},
 		Scoped:  &map[string][]GitIgnoreLine{},
@@ -168,8 +169,8 @@ func (repo *Repository) GitIgnoreRead() (*GitIgnore, error) {
 		(*ret.Scoped)[dirName] = GitIgnoreParseLines(lines)
 	}
 
+	fmt.Println("ennnnnnnnnnd")
 	return &ret, nil
-
 }
 
 var GitIgnoreDefaultCheck = errors.New("GitIgnoreDefaultCheck")
@@ -200,6 +201,7 @@ func CheckIgnoreScoped(rules *map[string][]GitIgnoreLine, path string) (bool, er
 	parent := filepath.Dir(path)
 
 	for {
+		fmt.Printf("parent:%s\n", parent)
 		if _, ok := (*rules)[parent]; ok {
 			res, err := CheckIgnorePath((*rules)[parent], path)
 			if err != nil && !errors.Is(err, GitIgnoreDefaultCheck) {
@@ -209,7 +211,7 @@ func CheckIgnoreScoped(rules *map[string][]GitIgnoreLine, path string) (bool, er
 				return res, err
 			}
 		}
-		if parent == "" {
+		if parent == "/" {
 			break
 		}
 		parent = filepath.Dir(parent)
@@ -235,10 +237,8 @@ func CheckIgnoreAbsolute(rules [][]GitIgnoreLine, path string) (bool, error) {
 }
 
 func CheckIgnore(rules *GitIgnore, path string) (bool, error) {
-	if filepath.IsAbs(path) {
-		return false, fmt.Errorf("this path is absolute path must be relative to .git dir path:%s\n", path)
-	}
 
+	fmt.Printf("path1:%s\n", path)
 	res, err := CheckIgnoreScoped(rules.Scoped, path)
 	if err != nil && !errors.Is(err, GitIgnoreDefaultCheck) {
 		return false, err
@@ -247,5 +247,6 @@ func CheckIgnore(rules *GitIgnore, path string) (bool, error) {
 		return res, err
 	}
 
+	fmt.Println("no heeeeeere")
 	return CheckIgnoreAbsolute(rules.Absolue, path)
 }

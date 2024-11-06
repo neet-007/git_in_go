@@ -14,7 +14,6 @@ import (
 )
 
 func (repo *Repository) ObjectRead(sha string) (GitObject, error) {
-	fmt.Printf("sha:%s\n", sha)
 	path, err := repo.RepoFile(false, "objects", sha[:2], sha[2:])
 
 	if err != nil {

@@ -66,7 +66,7 @@ func (repo *Repository) treeToDict(ref, prefix string) (*map[string]string, erro
 		return &map[string]string{}, fmt.Errorf("could not read obj as tree for sha:%s ref:%s prefix:%s\n", sha, ref, prefix)
 	}
 
-	for _, leaf := range tree.items {
+	for _, leaf := range tree.Items {
 		fullPath := filepath.Join(prefix, leaf.Path)
 
 		if string(leaf.Mode[:2]) == "04" {

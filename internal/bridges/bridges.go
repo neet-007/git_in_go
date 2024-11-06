@@ -33,7 +33,9 @@ func CmdCheckIgnore(paths ...string) {
 
 	rules, err := repo.GitIgnoreRead()
 
+	fmt.Printf("paths: %v\n", paths)
 	for _, path := range paths {
+		fmt.Printf("path:%s\n", path)
 		res, err := repository.CheckIgnore(rules, path)
 		if err != nil && !errors.Is(err, repository.GitIgnoreDefaultCheck) {
 			log.Fatalf("Error while check-ignore: %v\n", err)
@@ -94,7 +96,7 @@ func CmdCheckout(commit string, path string) {
 			log.Fatalf("Error with checkout: %v\n", err)
 		}
 	} else {
-		log.Fatalf("Error with checkout: %v\n", err)
+		log.Fatalf("Error with checkout: SHOULD NEVER BE HERE \n")
 	}
 
 	absPath, err := filepath.Abs(path)
@@ -110,6 +112,9 @@ func CmdCheckout(commit string, path string) {
 	}
 
 	objTree := obj.(*repository.GitTree)
+	for _, e := range (*objTree).Items {
+		fmt.Printf("e:%s\n", e.Path)
+	}
 	err = repo.TreeCheckout(objTree, realPath)
 	if err != nil {
 		fmt.Println("Error resolving real path:\n", err)

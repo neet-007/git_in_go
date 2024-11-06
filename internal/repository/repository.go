@@ -249,7 +249,7 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		return fmt.Errorf("Error while ls-tree could not cast as tree\n")
 	}
 
-	for _, item := range objTree.items {
+	for _, item := range objTree.Items {
 		var objType []byte
 		var objTypeStr string
 
@@ -292,12 +292,10 @@ func (repo *Repository) TreeCheckout(tree *GitTree, path string) error {
 		return fmt.Errorf("tree is nil at path:%s\n", path)
 	}
 
-	for _, item := range tree.items {
+	for _, item := range tree.Items {
 		if item == nil {
 			return fmt.Errorf("tree item is nil at path:%s\n", path)
 		}
-
-		fmt.Printf("\n\nsha:%s\npath:%s\n\n", item.Sha, item.Path)
 
 		obj, err := repo.ObjectRead(item.Sha)
 		if err != nil {
