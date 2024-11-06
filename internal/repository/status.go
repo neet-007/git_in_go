@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func (repo *Repository) getActiveBranch() (string, error) {
+func (repo *Repository) GetActiveBranch() (string, error) {
 	headFile, err := repo.RepoFile(false, "HEAD")
 	if err != nil {
 		return "", err
@@ -28,7 +28,7 @@ func (repo *Repository) getActiveBranch() (string, error) {
 }
 
 func (repo *Repository) StatusBranch() error {
-	branch, err := repo.getActiveBranch()
+	branch, err := repo.GetActiveBranch()
 	if err != nil {
 		return err
 	}

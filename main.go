@@ -22,7 +22,14 @@ func main() {
 	case "checkout":
 		bridges.CmdCheckout(args[2], args[3])
 	case "commit":
-		bridges.Cmd_commit(args[0])
+		var messageFlag string
+
+		commitCmd := flag.NewFlagSet("hash-object", flag.ExitOnError)
+		commitCmd.StringVar(&messageFlag, "m", "", "the message of the commit")
+
+		commitCmd.Parse(args[2:])
+
+		bridges.CmdCommit(messageFlag)
 	case "hash-object":
 		var writeFlag bool
 		var typeFlag string

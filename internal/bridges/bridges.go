@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/neet-007/git_in_go/internal/repository"
 )
@@ -129,8 +130,72 @@ func CmdCheckout(commit string, path string) {
 	}
 }
 
-func Cmd_commit(args string) {
+func CmdCommit(message string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
 
+	index, err := repo.IndexRead()
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
+
+	tree, err := repo.TreeFromIndex(index)
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
+
+	head, err := repo.ObjectFind("HEAD", "", true)
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
+
+	config, err := repository.GitConfigRead()
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
+
+	user := repository.GitConfigUserGet(config)
+
+	commit, err := repo.CommitCreate(tree, head, user, message, time.Now())
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
+
+	activeBranch, err := repo.GetActiveBranch()
+	if err != nil {
+		log.Fatalf("Error while commit:%v\n", err)
+	}
+
+	if activeBranch != "" {
+		repoFile, err := repo.RepoFile(false, filepath.Join("refs/heads", activeBranch))
+		if err != nil {
+			log.Fatalf("Error while commit:%v\n", err)
+		}
+
+		file, err := os.Open(repoFile)
+		if err != nil {
+			log.Fatalf("Error while commit:%v\n", err)
+		}
+		defer file.Close()
+
+		file.Write([]byte(commit + "\n"))
+
+	} else {
+		repoFile, err := repo.RepoFile(false, "HEAD")
+		if err != nil {
+			log.Fatalf("Error while commit:%v\n", err)
+		}
+
+		file, err := os.Open(repoFile)
+		if err != nil {
+			log.Fatalf("Error while commit:%v\n", err)
+		}
+		defer file.Close()
+
+		file.Write([]byte("\n"))
+	}
 }
 
 func CmdHashObject(write bool, typeName string, path string) {
