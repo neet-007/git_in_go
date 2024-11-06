@@ -209,7 +209,6 @@ func (repo *Repository) ObjectFind(name string, fmtType string, follow bool) (st
 				combined = append(combined, slice...)
 			}
 
-			fmt.Printf("combinde:%s\n", string(combined))
 			shaStr = string(combined)
 		} else {
 			return "", fmt.Errorf("last case name:%s, fmtType:%s, follow:%v error:%w\n", name, fmtType, follow)

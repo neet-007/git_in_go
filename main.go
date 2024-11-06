@@ -89,7 +89,7 @@ func main() {
 		positionalArgs := revParseCmd.Args()
 
 		if len(positionalArgs) == 0 {
-			log.Fatal("You must provide a dir or file path for ls-tree")
+			log.Fatal("You must provide a dir or file path for rev-parse")
 		}
 
 		bridges.Cmd_rev_parse(typeFlag, positionalArgs[0])

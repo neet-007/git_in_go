@@ -42,7 +42,7 @@ func (repo *Repository) StatusBranch() error {
 		return err
 	}
 
-	fmt.Printf("HEAD detached at %s.", sha)
+	fmt.Printf("HEAD detached at %s.\n", sha)
 	return nil
 }
 
@@ -97,16 +97,16 @@ func (repo *Repository) StatusHeadIndex(index *GitIndex) error {
 	for _, e := range index.Entries {
 		if _, ok := (*head)[e.Name]; ok {
 			if (*head)[e.Name] != e.Sha {
-				fmt.Printf(" modified:%s", e.Name)
+				fmt.Printf("  modified:%s\n", e.Name)
 			}
 			delete(*head, e.Name)
 		} else {
-			fmt.Printf(" added:  %s", e.Name)
+			fmt.Printf("  added:  %s\n", e.Name)
 		}
 	}
 
 	for e := range *head {
-		fmt.Printf(" deleted: %s", e)
+		fmt.Printf("  deleted: %s\n", e)
 	}
 
 	return nil
@@ -175,7 +175,7 @@ func (repo *Repository) StatusIndexWorktree(index *GitIndex) error {
 			}
 
 			if e.Sha != newSha {
-				fmt.Printf("  modified:", e.Name)
+				fmt.Printf("  modified:%s\n", e.Name)
 			}
 		}
 
