@@ -11,8 +11,16 @@ import (
 	"github.com/neet-007/git_in_go/internal/repository"
 )
 
-func Cmd_add(args string) {
+func CmdAdd(paths ...string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while add:%v\n", err)
+	}
 
+	err = repo.Add(paths)
+	if err != nil {
+		log.Fatalf("Error while add:%v\n", err)
+	}
 }
 
 func CmdCatFile(args ...string) {
@@ -218,7 +226,7 @@ func CmdLsTree(path string, recursive bool) {
 
 }
 
-func Cmd_rev_parse(typeArg string, name string) {
+func CmdRevParse(typeArg string, name string) {
 	repo, err := repository.FindRepo(".", true)
 	if err != nil {
 		log.Fatalf("Error while rev-parse name:%s, type:%s, %v", name, typeArg, err)
@@ -232,11 +240,19 @@ func Cmd_rev_parse(typeArg string, name string) {
 	fmt.Printf("%s\n", sha)
 }
 
-func Cmd_rm(args string) {
+func CmdRm(paths ...string) {
+	repo, err := repository.FindRepo(".", true)
+	if err != nil {
+		log.Fatalf("Error while rm:%v\n", err)
+	}
 
+	err = repo.Rm(paths, true, false)
+	if err != nil {
+		log.Fatalf("Error while rm:%v\n", err)
+	}
 }
 
-func Cmd_show_ref(args string) {
+func CmdShowRef(args string) {
 	repo, err := repository.FindRepo(".", true)
 	if err != nil {
 		log.Fatalf("Error while show-ref %v\n", err)
@@ -270,7 +286,7 @@ func CmdStatus() {
 	repo.StatusIndexWorktree(index)
 }
 
-func Cmd_tag(name string, object string, createTagObject bool) {
+func CmdTag(name string, object string, createTagObject bool) {
 	/*
 		name: default val is ""
 		object: default val is ""

@@ -83,249 +83,6 @@ func (index *GitIndex) Init(version uint32, entries []GitIndexEntry) {
 	index.Entries = entries
 }
 
-/*
-	func (repo *Repository) IndexRead() (*GitIndex, error) {
-		indexFile, err := repo.RepoFile(false, "index")
-		if err != nil {
-			return &GitIndex{}, err
-		}
-
-		file, err := os.Open(indexFile)
-		if err != nil {
-			return &GitIndex{}, err
-		}
-		defer file.Close()
-
-		idx := 0
-		header := make([]byte, 12, 12)
-		buff := make([]byte, 4, 4)
-		twoBytesBuff := make([]byte, 2, 2)
-		twentyBytesBuff := make([]byte, 20, 20)
-
-		n, err := file.Read(header)
-		if err != nil {
-			return &GitIndex{}, err
-		}
-		idx += n
-
-		sig := header[:4]
-		if string(sig) != "DIRC" {
-			return &GitIndex{}, fmt.Errorf("exp sig to be DIRC got %s\n", string(sig))
-		}
-
-		version := binary.BigEndian.Uint32(header[4:8])
-		if version != 2 {
-			return &GitIndex{}, fmt.Errorf("exp version to be %d got %d\n", 2, version)
-		}
-
-		count := binary.BigEndian.Uint32(header[8:12])
-
-		fmt.Printf("idx:%d\n", idx)
-		entries := []GitIndexEntry{}
-		for i := 0; i < int(count); i++ {
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-
-			fmt.Printf("idx:%d\n", idx)
-			cTimeS := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			cTimeN := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			mTimeS := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			mTimeN := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			dev := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			ino := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(twoBytesBuff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			if binary.BigEndian.Uint16(twoBytesBuff) != 0 {
-				return &GitIndex{}, fmt.Errorf("exp unused to be %d got %d for offest %d\n", 0, binary.BigEndian.Uint16(twoBytesBuff), n)
-			}
-
-			n, err = file.ReadAt(twoBytesBuff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			mode := binary.BigEndian.Uint16(twoBytesBuff)
-			modeType := mode >> 12
-			if modeType != 0b1000 && modeType != 0b1010 && modeType != 0b1110 {
-				return &GitIndex{}, fmt.Errorf("exp mode type to be %d or %d or %d  got %d for offest %d\n", 0b1000, 0b1010, 0b1110, modeType, n)
-			}
-			modePerrms := mode & 0b0000000111111111
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			uid := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			gid := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(buff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			fsize := binary.BigEndian.Uint32(buff)
-
-			n, err = file.ReadAt(twentyBytesBuff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			sha := fmt.Sprintf("%040x", new(big.Int).SetBytes(twentyBytesBuff))
-
-			n, err = file.ReadAt(twoBytesBuff, int64(idx))
-			if err != nil {
-				return &GitIndex{}, err
-			}
-			idx += n
-			fmt.Printf("idx:%d\n", idx)
-
-			flags := binary.BigEndian.Uint16(twoBytesBuff)
-
-			flagAssumedValid := (flags & 0b1000000000000000) != 0
-			flagExnteded := (flags & 0b0100000000000000) != 0
-
-			if flagExnteded {
-				return &GitIndex{}, fmt.Errorf("exp flag extended  to be false got true\n")
-			}
-
-			flagStage := flags & 0b0011000000000000
-
-			nameLength := flags & 0b0000111111111111
-			fmt.Printf("lenght:%v\n", nameLength)
-			nameBuff := make([]byte, nameLength, nameLength)
-			if nameLength < 0xFFF {
-				n, err = file.ReadAt(nameBuff, int64(idx))
-				if err != nil {
-					return &GitIndex{}, err
-				}
-				idx += n + 1
-				fmt.Printf("idx:%d\n", idx)
-
-			} else {
-				buffer := make([]byte, nameLength, nameLength)
-
-				for {
-					n, err := file.Read(buffer)
-					if err != nil {
-						if err.Error() == "EOF" {
-							break
-						}
-						return &GitIndex{}, err
-					}
-					idx += n
-					fmt.Printf("idx:%d\n", idx)
-
-					nullIdx := bytes.IndexByte(buffer[:n], 0x00)
-
-					if nullIdx != -1 {
-						nameBuff = append(nameBuff, buffer[:nullIdx]...)
-						idx += nullIdx + 1
-						break
-					} else {
-						nameBuff = append(nameBuff, buffer[:n]...)
-						idx += n
-					}
-				}
-			}
-
-			name := string(nameBuff)
-
-			fmt.Printf("idx:%d\n", idx)
-			idx = int(8 * math.Ceil(float64(idx)/8))
-			fmt.Printf("idx:%d\n", idx)
-
-			fmt.Println("done")
-			entries = append(entries, GitIndexEntry{
-				ModeType: modeType,
-				Sha:      sha,
-				Name:     name,
-				CTime: fTime{
-					Seconds:     cTimeS,
-					Nanoseconds: cTimeN,
-				},
-				MTime: fTime{
-					Seconds:     mTimeS,
-					Nanoseconds: mTimeN,
-				},
-				UId:              uid,
-				GId:              gid,
-				Dev:              dev,
-				Ino:              ino,
-				ModePerms:        modePerrms,
-				FSize:            fsize,
-				FlagAssumedValid: flagAssumedValid,
-				FlagStage:        flagStage,
-			})
-		}
-		return &GitIndex{Entries: entries, Version: version}, nil
-	}
-*/
 func (repo *Repository) IndexRead() (*GitIndex, error) {
 	indexFile, err := repo.RepoFile(false, "index")
 	if err != nil {
@@ -433,4 +190,142 @@ func (repo *Repository) IndexRead() (*GitIndex, error) {
 	}
 
 	return &GitIndex{Version: version, Entries: entries}, nil
+}
+
+func (repo *Repository) IndexWrite(index *GitIndex) error {
+	indexFile, err := repo.RepoFile(false, "index")
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(indexFile, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+
+	dirc := make([]byte, 4, 4)
+	for _, c := range "DIRC" {
+		dirc = append(dirc, byte(c))
+	}
+
+	_, err = file.Write(dirc)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, index.Version))
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, uint32(len(index.Entries))))
+	if err != nil {
+		return err
+	}
+
+	idx := 0
+	for _, e := range index.Entries {
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.CTime.Seconds))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.CTime.Nanoseconds))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.MTime.Seconds))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.MTime.Nanoseconds))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.Dev))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.Ino))
+		if err != nil {
+			return err
+		}
+
+		mode := (e.ModeType << 12) | e.ModePerms
+		_, err = file.Write(binary.BigEndian.AppendUint16([]byte{}, mode))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.UId))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.GId))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(binary.BigEndian.AppendUint32([]byte{}, e.FSize))
+		if err != nil {
+			return err
+		}
+
+		shaBytes := make([]byte, len(e.Sha))
+		for _, c := range e.Sha {
+			shaBytes = append(shaBytes, byte(c))
+		}
+		_, err = file.Write(shaBytes)
+		if err != nil {
+			return err
+		}
+
+		var flagAssumedValid uint16
+		if e.FlagAssumedValid {
+			flagAssumedValid = 0x1 << 15
+		} else {
+			flagAssumedValid = 0
+		}
+
+		lenNameBytes := len(e.Name)
+		nameBytes := make([]byte, lenNameBytes)
+		for _, c := range e.Name {
+			nameBytes = append(nameBytes, byte(c))
+		}
+
+		var nameLength int = lenNameBytes
+		if lenNameBytes >= 0xFFF {
+			nameLength = 0xFFF
+		}
+
+		file.Write(binary.BigEndian.AppendUint16([]byte{}, (flagAssumedValid | e.FlagStage | uint16(nameLength))))
+
+		file.Write(nameBytes)
+		_, err = file.Write([]byte{0})
+
+		idx += 62 + len(nameBytes) + 1
+
+		if idx%8 != 0 {
+			pad := 8 - (idx % 8)
+			paddingBytes := make([]byte, pad)
+
+			_, err = file.Write(paddingBytes)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

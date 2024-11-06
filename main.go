@@ -14,7 +14,7 @@ func main() {
 
 	switch args[1] {
 	case "add":
-		bridges.Cmd_add(args[0])
+		bridges.CmdAdd(args[2:]...)
 	case "cat-file":
 		bridges.CmdCatFile(args...)
 	case "check-ignore":
@@ -92,11 +92,11 @@ func main() {
 			log.Fatal("You must provide a dir or file path for rev-parse")
 		}
 
-		bridges.Cmd_rev_parse(typeFlag, positionalArgs[0])
+		bridges.CmdRevParse(typeFlag, positionalArgs[0])
 	case "rm":
-		bridges.Cmd_rm(args[0])
+		bridges.CmdRm(args[2:]...)
 	case "show-ref":
-		bridges.Cmd_show_ref(args[0])
+		bridges.CmdShowRef(args[0])
 	case "status":
 		bridges.CmdStatus()
 	case "tag":
@@ -110,9 +110,9 @@ func main() {
 		positionalArgs := tagObjectCmd.Args()
 
 		if len(positionalArgs) == 0 {
-			bridges.Cmd_tag("", "", tagObjectFlag)
+			bridges.CmdTag("", "", tagObjectFlag)
 		} else {
-			bridges.Cmd_tag(positionalArgs[0], positionalArgs[1], tagObjectFlag)
+			bridges.CmdTag(positionalArgs[0], positionalArgs[1], tagObjectFlag)
 		}
 	default:
 		log.Fatal("unkown command")
