@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"slices"
 )
 
 type GitTreeLeaf struct {
@@ -76,10 +77,60 @@ func TreeParser(raw []byte) ([]*GitTreeLeaf, error) {
 
 func TreeSerialize(tree *GitTree) ([]byte, error) {
 	if tree == nil {
-		return []byte{}, nil
+		return []byte{}, fmt.Errorf("tree is nil")
 	}
-
 	//SORT THIS LIKE GIT
+	slices.SortFunc((*tree).Items, func(a, b *GitTreeLeaf) int {
+		var objType []byte
+		if len(a.Mode) == 5 {
+			objType = a.Mode[:1]
+		} else {
+			objType = a.Mode[:2]
+		}
+
+		objTypeNumStr := string(objType)
+		switch {
+		case objTypeNumStr == "04":
+			a.Path += "/"
+		case objTypeNumStr == "10":
+			break
+		case objTypeNumStr == "12":
+			a.Path += "/"
+		case objTypeNumStr == "16":
+			a.Path += "/"
+		default:
+			return 0
+		}
+
+		if len(b.Mode) == 5 {
+			objType = b.Mode[:1]
+		} else {
+			objType = b.Mode[:2]
+		}
+
+		objTypeNumStr = string(objType)
+		switch {
+		case objTypeNumStr == "04":
+			b.Path += "/"
+		case objTypeNumStr == "10":
+			break
+		case objTypeNumStr == "12":
+			b.Path += "/"
+		case objTypeNumStr == "16":
+			b.Path += "/"
+		default:
+			return 0
+		}
+
+		if a.Path < b.Path {
+			return -1
+		}
+		if a.Path > b.Path {
+			return 1
+		}
+
+		return 0
+	})
 	ret := make([]byte, 0)
 
 	for _, leaf := range tree.Items {

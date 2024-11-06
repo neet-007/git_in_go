@@ -101,23 +101,23 @@ func CmdCheckout(commit string, path string) {
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		fmt.Println("Error resolving absolute path:%s, err:%s\n", path, err)
-		return
+		log.Fatalf("Error resolving absolute path:%s, err:%s\n", path, err)
 	}
 
 	realPath, err := filepath.EvalSymlinks(absPath)
 	if err != nil {
-		fmt.Println("Error resolving real path:\n", err)
+		log.Fatalf("Error resolving real path:\n", err)
 		return
 	}
 
-	objTree := obj.(*repository.GitTree)
-	for _, e := range (*objTree).Items {
-		fmt.Printf("e:%s\n", e.Path)
+	objTree, ok := obj.(*repository.GitTree)
+	if !ok {
+		log.Fatalf("Error with checkout could not convert obj to tree \n")
 	}
+
 	err = repo.TreeCheckout(objTree, realPath)
 	if err != nil {
-		fmt.Println("Error resolving real path:\n", err)
+		log.Fatalf("Error resolving real path:\n", err)
 	}
 }
 
