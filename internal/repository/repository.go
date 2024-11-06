@@ -241,7 +241,7 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		if err != nil {
 			return fmt.Errorf("Error while ls-tree err:%w\n", err)
 		}
-		return fmt.Errorf("Error while ls-tree expected object to be tree got:%s\n", objFmt)
+		return fmt.Errorf("Error while ls-tree expected object to be tree got:%s\n", string(objFmt))
 	}
 
 	objTree, ok := obj.(*GitTree)
@@ -263,6 +263,8 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		switch {
 		case objTypeNumStr == "04":
 			objTypeStr = "tree"
+		case objTypeNumStr == "40":
+			objTypeStr = "tree"
 		case objTypeNumStr == "10":
 			objTypeStr = "blob"
 		case objTypeNumStr == "12":
@@ -270,7 +272,8 @@ func (repo *Repository) LsTree(path string, recursive bool, prefix string) error
 		case objTypeNumStr == "16":
 			objTypeStr = "commit"
 		default:
-			return fmt.Errorf("unknow type %s bytes %v  for path %s\n", objTypeNumStr, objType, path)
+			return fmt.Errorf("unknow type %s bytes %v string %s for path %s item path %s item sha %s\n", objTypeNumStr, objType,
+				string(objType), path, item.Path, item.Sha)
 		}
 
 		if !(recursive && objTypeStr == "tree") {

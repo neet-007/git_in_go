@@ -14,7 +14,7 @@ type GitTreeLeaf struct {
 }
 
 func treeParseLeaf(reader *bytes.Reader) (*GitTreeLeaf, error) {
-	modeBytes := make([]byte, 0, 6)
+	modeBytes := make([]byte, 0, 5)
 	for {
 		b, err := reader.ReadByte()
 		if err != nil {
@@ -31,7 +31,7 @@ func treeParseLeaf(reader *bytes.Reader) (*GitTreeLeaf, error) {
 		return nil, fmt.Errorf("tree is malformed: len mode byte not 5 or 6 got %d\n", lenMode)
 	}
 	if lenMode == 5 {
-		modeBytes = append(modeBytes, ' ')
+		modeBytes = append([]byte{'0'}, modeBytes...)
 	}
 
 	pathBytes := []byte{}
